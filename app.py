@@ -96,6 +96,72 @@ def mostrar_reportes():
         columns=("Mesa", "Producto", "Precio", "Fecha"),
         show="headings"
     )
+def ver_ticket_mesa():
+    mesa_seleccionada = mesa_var.get()
+    
+    # Crear ventana emergente
+    ventana_mesa = tk.Toplevel(root)
+    ventana_mesa.title(f"Ticket Actual - {mesa_seleccionada}")
+    ventana_mesa.geometry("400x500")
+    ventana_mesa.configure(bg="white")
+    
+    # Título
+    lbl_title = tk.Label(
+        ventana_mesa, 
+        text=f"PEDIDOS PENDIENTES: {mesa_seleccionada}", 
+        font=("Arial", 16, "bold"), 
+        bg="white"
+    )
+    lbl_title.pack(pady=15)
+    
+    # Área de texto para mostrar los productos
+    txt_ticket = tk.Text(
+        ventana_mesa, 
+        width=40, 
+        height=15, 
+        font=("Courier", 12),
+        state="disabled" # Solo lectura
+    )
+    txt_ticket.pack(pady=10)
+    
+    # Habilitar escritura temporalmente para insertar datos
+    txt_ticket.config(state="normal")
+    
+    # Consultar a la base de datos
+    cursor.execute("SELECT producto, precio FROM pedidos WHERE mesa = ?", (mesa_seleccionada,))
+    rows = cursor.fetchall()
+    
+    total_mesa = 0
+    
+    if not rows:
+        txt_ticket.insert(tk.END, "No hay pedidos registrados\npara esta mesa.")
+    else:
+        for producto, precio in rows:
+            txt_ticket.insert(tk.END, f"{producto:<25} ${precio}\n")
+            total_mesa += precio
+            
+    txt_ticket.config(state="disabled") # Bloquear edición
+    
+    # Mostrar Total
+    lbl_total = tk.Label(
+        ventana_mesa, 
+        text=f"TOTAL MESA: ${total_mesa:.2f}", 
+        font=("Arial", 14, "bold"), 
+        fg="#E74C3C",
+        bg="white"
+    )
+    lbl_total.pack(pady=10)
+    
+    # Botón para cerrar
+    btn_cerrar = tk.Button(
+        ventana_mesa, 
+        text="Cerrar", 
+        command=ventana_mesa.destroy,
+        bg="#95A5A6",
+        fg="white",
+        font=("Arial", 10, "bold")
+    )
+    btn_cerrar.pack(pady=5)
 
     tree.heading("Mesa", text="Mesa")
     tree.heading("Producto", text="Producto")
@@ -108,6 +174,29 @@ def mostrar_reportes():
 
     for row in cursor.fetchall():
         tree.insert("", tk.END, values=row)
+
+def realizar_corte():
+    # 1. Calcular el total vendido
+    cursor.execute("SELECT SUM(precio) FROM pedidos")
+    resultado = cursor.fetchone()
+    total_dia = resultado[0] if resultado[0] is not None else 0.0
+    
+    # 2. Obtener cantidad de tickets
+    cursor.execute("SELECT COUNT(*) FROM pedidos")
+    num_pedidos = cursor.fetchone()[0]
+
+    # 3. Mostrar resumen
+    messagebox.showinfo(
+        "CORTE DE CAJA", 
+        f"Total Vendido: ${total_dia:.2f}\nPedidos Atendidos: {num_pedidos}\n\n¡Base de datos reiniciada para el siguiente turno!"
+    )
+
+    # 4. Limpiar la base de datos (Opcional: si quieres borrar el historial diario)
+    cursor.execute("DELETE FROM pedidos")
+    conn.commit()
+    
+    # 5. Limpiar la interfaz actual también
+    limpiar()
 
 header = tk.Frame(root, bg="#27AE60", height=70)
 header.pack(fill="x")
@@ -251,6 +340,30 @@ reportes_btn = tk.Button(
     command=mostrar_reportes
 )
 reportes_btn.pack(pady=10)
+
+corte_btn = tk.Button(
+    right,
+    text="HACER CORTE FINAL",
+    width=25,
+    bg="#E74C3C",  # Color rojo para indicar acción crítica
+    fg="white",
+    font=("Arial", 11, "bold"),
+    command=realizar_corte
+)
+corte_btn.pack(pady=10)
+
+# ... (código anterior de reportes_btn)
+
+ticket_mesa_btn = tk.Button(
+    right,
+    text="Ver Ticket por Mesa",
+    width=25,
+    bg="#F39C12",  # Color naranja para diferenciarlo
+    fg="white",
+    font=("Arial", 11, "bold"),
+    command=ver_ticket_mesa
+)
+ticket_mesa_btn.pack(pady=10)
 
 root.mainloop()
 conn.close()
