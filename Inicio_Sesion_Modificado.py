@@ -44,7 +44,7 @@ def iniciar_sesion():
         messagebox.showinfo("Login", "Inicio de sesión exitoso")
         ventana.destroy()
         directorio_actual = os.path.dirname(os.path.abspath(__file__))
-        ruta_script = os.path.join(directorio_actual, "app_modificado.py")
+        ruta_script = os.path.join(directorio_actual, "app.py")
         subprocess.run([sys.executable, ruta_script])
     else:
         messagebox.showerror("Error", "Correo o contraseña incorrectos")
