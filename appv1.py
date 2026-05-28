@@ -323,6 +323,29 @@ def generar_ticket_mesa():
 
     cerrar_btn.pack(pady=15)
 
+def realizar_corte():
+    # 1. Sumar todo lo vendido en el día
+    cursor.execute("SELECT SUM(precio) FROM pedidos")
+    resultado = cursor.fetchone()
+    total_dia = resultado[0] if resultado[0] is not None else 0.0
+
+    # 2. Contar tickets totales
+    cursor.execute("SELECT COUNT(*) FROM pedidos")
+    num_pedidos = cursor.fetchone()[0]
+
+    # 3. Mostrar resumen
+    messagebox.showinfo(
+        "CORTE DE CAJA",
+        f"💰 Total Vendido: ${total_dia:.2f}\n🧾 Pedidos Atendidos: {num_pedidos}\n\n✅ ¡Base de datos reiniciada para el siguiente turno!"
+    )
+
+    # 4. Borrar todos los registros de la BD
+    cursor.execute("DELETE FROM pedidos")
+    conn.commit()
+
+    # 5. Limpiar la interfaz actual
+    limpiar()
+
 def crear_producto_menu(nombre, precio):
 
     row = tk.Frame(left, bg="white")
@@ -664,7 +687,19 @@ ticket_mesa_btn = tk.Button(
 )
 
 ticket_mesa_btn.pack(side="left", padx=5)
+# Botón de Corte Final
 
+corte_btn = tk.Button(
+    botones_extra,
+    text="✂️ HACER CORTE FINAL",
+    width=18,
+    bg="#E74C3C",
+    fg="white",
+    font=("Arial", 11, "bold"),
+    command=realizar_corte
+)
+
+corte_btn.pack(side="left", padx=5)
 root.mainloop()
 
 conn.close()
